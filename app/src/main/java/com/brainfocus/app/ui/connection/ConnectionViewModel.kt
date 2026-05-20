@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.brainfocus.app.brainbit.BrainBitDevice
 import com.brainfocus.app.brainbit.BrainBitManager
 import com.brainfocus.app.brainbit.ConnectionState
+import com.brainfocus.app.brainbit.DeviceInfo
 import com.brainfocus.app.brainbit.ScanState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,11 +26,11 @@ class ConnectionViewModel : ViewModel() {
     private val _concentration = MutableStateFlow(0.5f)
     val concentration: StateFlow<Float> = _concentration.asStateFlow()
 
-    private val _isTestMode = MutableStateFlow(false)
-    val isTestMode: StateFlow<Boolean> = _isTestMode.asStateFlow()
+    private val _batteryLevel = MutableStateFlow<Int?>(null)
+    val batteryLevel: StateFlow<Int?> = _batteryLevel.asStateFlow()
 
-    private val _canStartGame = MutableStateFlow(false)
-    val canStartGame: StateFlow<Boolean> = _canStartGame.asStateFlow()
+    private val _deviceInfo = MutableStateFlow<DeviceInfo?>(null)
+    val deviceInfo: StateFlow<DeviceInfo?> = _deviceInfo.asStateFlow()
 
     fun initialize(context: Context) {
         if (brainBitManager == null) {
@@ -61,7 +62,6 @@ class ConnectionViewModel : ViewModel() {
             launch {
                 manager.connectionState.collect { state ->
                     _connectionState.value = state
-                    updateCanStartGame()
                 }
             }
             launch {
@@ -69,65 +69,25 @@ class ConnectionViewModel : ViewModel() {
                     _concentration.value = value
                 }
             }
+            launch {
+                manager.batteryLevel.collect { level ->
+                    _batteryLevel.value = level
+                }
+            }
+            launch {
+                manager.deviceInfo.collect { info ->
+                    _deviceInfo.value = info
+                }
+            }
             manager.connect(device)
-        }
-    }
-
-    fun startSimulation() {
-        brainBitManager?.let { manager ->
-            manager.startSimulation()
-            viewModelScope.launch {
-                launch {
-                    manager.connectionState.collect { state ->
-                        _connectionState.value = state
-                        updateCanStartGame()
-                    }
-                }
-                launch {
-                    manager.concentration.collect { value ->
-                        _concentration.value = value
-                    }
-                }
-            }
-        }
-    }
-
-    fun stopSimulation() {
-        brainBitManager?.stopSimulation()
-        updateCanStartGame()
-    }
-
-    fun setTestMode(enabled: Boolean) {
-        _isTestMode.value = enabled
-        updateCanStartGame()
-        
-        if (enabled && brainBitManager != null) {
-            if (!brainBitManager!!.isConnected.value) {
-                startSimulation()
-            }
-        } else if (!enabled && brainBitManager?.isInSimulationMode() == true) {
-            disconnect()
         }
     }
 
     fun disconnect() {
         brainBitManager?.disconnect()
-        updateCanStartGame()
     }
 
-    fun isConnectedToDevice(): Boolean {
-        return brainBitManager?.isConnected?.value == true
-    }
-
-    fun isInSimulationMode(): Boolean {
-        return brainBitManager?.isInSimulationMode() == true
-    }
-
-    private fun updateCanStartGame() {
-        val isConnected = brainBitManager?.isConnected?.value == true
-        val isTest = _isTestMode.value
-        _canStartGame.value = isConnected || isTest
-    }
+    fun isConnected(): Boolean = brainBitManager?.isConnected?.value == true
 
     fun getManager(): BrainBitManager? = brainBitManager
 

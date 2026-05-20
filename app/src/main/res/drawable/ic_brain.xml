@@ -1,0 +1,164 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Волосы - хвост -->
+    <path
+        android:strokeColor="#FF8C42"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M42,22 C38,18 32,22 28,30 C24,38 22,50 22,65 C22,80 24,95 26,110 L28,110 C26,95 24,80 24,65 C24,50 26,38 30,30 C34,22 38,20 42,22z" />
+
+    <!-- Волосы - пряди -->
+    <path
+        android:strokeColor="#FF8C42"
+        android:strokeWidth="1"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M38,25 C34,35 32,50 32,70 C32,90 34,100 36,110" />
+
+    <path
+        android:strokeColor="#FF8C42"
+        android:strokeWidth="1"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M34,28 C30,40 28,55 28,75 C28,95 30,105 32,110" />
+
+    <!-- Волосы - макушка -->
+    <path
+        android:strokeColor="#FF8C42"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M55,18 C50,16 45,18 42,22 C40,25 38,30 38,35" />
+
+    <!-- Резинка для волос -->
+    <path
+        android:strokeColor="#FF8C42"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M38,28 L42,26 L42,30 L38,32z" />
+
+    <!-- Профиль лица -->
+    <path
+        android:strokeColor="#FF8C42"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M55,18 C55,18 58,22 60,28 C62,32 63,35 65,38 C67,40 70,42 72,44 C74,46 76,48 78,50 C80,52 82,55 83,58 C84,62 84,66 83,70 C82,74 80,78 78,82 C76,86 73,90 70,94 C67,98 64,102 60,106 L60,110" />
+
+    <!-- Глаз -->
+    <path
+        android:strokeColor="#FF8C42"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M68,42 C68,40 71,40 73,42 C73,44 70,44 68,42z" />
+
+    <!-- Бровь -->
+    <path
+        android:strokeColor="#FF8C42"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M66,39 C68,37 72,37 74,39" />
+
+    <!-- Ухо -->
+    <path
+        android:strokeColor="#FF8C42"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M62,48 C60,50 59,54 60,58 C61,62 63,64 65,64 C67,64 68,62 68,60" />
+
+    <!-- Наушник -->
+    <path
+        android:strokeColor="#FF8C42"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M63,52 C61,54 60,56 61,58 C62,60 64,61 66,60 C68,59 69,57 68,55 C67,53 65,52 63,52z" />
+
+    <path
+        android:strokeColor="#FF8C42"
+        android:strokeWidth="1"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M64,55 C63,56 63,58 64,59 C65,60 67,60 68,59" />
+
+    <!-- Шея -->
+    <path
+        android:strokeColor="#FF8C42"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M62,98 C60,102 58,106 56,110 L56,115" />
+
+    <!-- Плечо -->
+    <path
+        android:strokeColor="#FF8C42"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M56,110 C50,112 45,114 40,115" />
+
+    <!-- Повязка BrainBit - основа -->
+    <path
+        android:fillColor="#FF8C42"
+        android:pathData="M42,38 L78,38 L78,52 L42,52z" />
+
+    <!-- Повязка - левая пряжка -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M44,40 L48,40 L48,50 L44,50z" />
+
+    <!-- Повязка - правая пряжка -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M72,40 L76,40 L76,50 L72,50z" />
+
+    <!-- Повязка - секция электродов 1 (левая) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="0.8"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M50,40 L54,44 M50,44 L54,40 M52,39 L52,45 M49,42 L55,42" />
+
+    <!-- Повязка - секция электродов 2 (центр-лево) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="0.8"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M58,40 L62,44 M58,44 L62,40 M60,39 L60,45 M57,42 L63,42" />
+
+    <!-- Повязка - секция электродов 3 (центр-право) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="0.8"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M66,40 L70,44 M66,44 L70,40 M68,39 L68,45 M65,42 L71,42" />
+
+    <!-- Повязка - логотип (круг с EEG) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M60,45 A3,3 0 1,1 60,51 A3,3 0 1,1 60,45z" />
+
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="0.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M58,47 L59,47 L59.5,46 L60,49 L60.5,45 L61,48 L61.5,47 L62,47" />
+
+</vector>

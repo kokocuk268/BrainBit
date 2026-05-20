@@ -1,9 +1,11 @@
 package com.brainfocus.app.ui.connection
 
+import android.animation.ObjectAnimator
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
@@ -16,6 +18,7 @@ import com.brainfocus.app.brainbit.ConnectionState
 import com.brainfocus.app.brainbit.ScanState
 import com.brainfocus.app.databinding.FragmentConnectionBinding
 import com.brainfocus.app.ui.MainActivity
+import com.brainfocus.app.ui.theme.ThemeManager
 import com.brainfocus.app.utils.PermissionHelper
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -26,6 +29,7 @@ class ConnectionFragment : Fragment() {
 
     private val viewModel: ConnectionViewModel by activityViewModels { ConnectionViewModelFactory() }
     private lateinit var deviceAdapter: DeviceAdapter
+    private var pulseAnimator: ObjectAnimator? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -40,9 +44,15 @@ class ConnectionFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupRecyclerView()
         setupClickListeners()
-        setupTestModeSwitch()
         observeState()
+        observeDeviceInfo()
+        updateThemeIcon()
         viewModel.initialize(requireContext())
+    }
+
+    private fun updateThemeIcon() {
+        val isDark = ThemeManager.isDarkTheme(requireContext())
+        binding.themeToggleBtn.setImageResource(if (isDark) R.drawable.ic_sun else R.drawable.ic_moon)
     }
 
     private fun setupRecyclerView() {
@@ -64,34 +74,14 @@ class ConnectionFragment : Fragment() {
             viewModel.disconnect()
         }
 
-        binding.startGameButton.setOnClickListener {
-            startGame()
-        }
-    }
-
-    private fun setupTestModeSwitch() {
-        binding.testModeSwitch.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                binding.scanButton.isEnabled = false
-            } else {
-                binding.scanButton.isEnabled = true
-            }
-            viewModel.setTestMode(isChecked)
-            updateUIForTestMode(isChecked)
-        }
-    }
-
-    private fun updateUIForTestMode(isTestMode: Boolean) {
-        if (isTestMode) {
-            binding.connectionStatusHint.text = getString(R.string.test_mode_warning)
-            binding.connectionStatusHint.setTextColor(
-                ContextCompat.getColor(requireContext(), R.color.concentration_medium)
-            )
-        } else {
-            binding.connectionStatusHint.text = getString(R.string.connect_device_hint)
-            binding.connectionStatusHint.setTextColor(
-                ContextCompat.getColor(requireContext(), android.R.color.darker_gray)
-            )
+        binding.themeToggleBtn.setOnClickListener { view ->
+            val isDark = ThemeManager.isDarkTheme(requireContext())
+            binding.themeToggleBtn.setImageResource(if (isDark) R.drawable.ic_moon else R.drawable.ic_sun)
+            val location = IntArray(2)
+            view.getLocationOnScreen(location)
+            val x = location[0] + view.width / 2
+            val y = location[1] + view.height / 2
+            (activity as? MainActivity)?.applyThemeReveal(x, y)
         }
     }
 
@@ -123,9 +113,38 @@ class ConnectionFragment : Fragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.canStartGame.collectLatest { canStart ->
-                binding.startGameButton.isEnabled = canStart
+            viewModel.batteryLevel.collectLatest { level ->
+                updateBatteryUI(level)
             }
+        }
+    }
+
+    private fun observeDeviceInfo() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.deviceInfo.collectLatest { info ->
+                if (info != null) {
+                    binding.deviceInfoText.isVisible = true
+                    binding.deviceInfoText.text = info.address
+                } else {
+                    binding.deviceInfoText.isVisible = false
+                }
+            }
+        }
+    }
+
+    private fun updateBatteryUI(level: Int?) {
+        if (level != null) {
+            binding.batteryIndicator.isVisible = true
+            binding.batteryText.text = getString(R.string.battery_level, level)
+
+            val iconRes = when {
+                level >= 50 -> R.drawable.ic_battery_full
+                level >= 20 -> R.drawable.ic_battery_mid
+                else -> R.drawable.ic_battery_low
+            }
+            binding.batteryIcon.setImageResource(iconRes)
+        } else {
+            binding.batteryIndicator.isVisible = false
         }
     }
 
@@ -134,72 +153,105 @@ class ConnectionFragment : Fragment() {
             is ConnectionState.Disconnected -> {
                 binding.connectionStatusText.text = getString(R.string.disconnected)
                 binding.connectionStatusText.setTextColor(
-                    ContextCompat.getColor(requireContext(), R.color.concentration_low)
+                    ContextCompat.getColor(requireContext(), R.color.error)
                 )
+                binding.statusDot.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    ContextCompat.getColor(requireContext(), R.color.error)
+                )
+                stopPulseAnimation()
                 binding.scanButton.isVisible = true
                 binding.disconnectButton.isVisible = false
             }
             is ConnectionState.Connecting -> {
                 binding.connectionStatusText.text = getString(R.string.connecting)
                 binding.connectionStatusText.setTextColor(
-                    ContextCompat.getColor(requireContext(), R.color.concentration_medium)
+                    ContextCompat.getColor(requireContext(), R.color.warning)
                 )
-                binding.startGameButton.isEnabled = false
+                binding.statusDot.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    ContextCompat.getColor(requireContext(), R.color.warning)
+                )
+                startPulseAnimation()
                 binding.scanButton.isVisible = false
             }
             is ConnectionState.Connected -> {
-                if (viewModel.isInSimulationMode()) {
-                    binding.connectionStatusText.text = getString(R.string.simulation_active)
-                    binding.disconnectButton.isVisible = false
-                } else {
-                    binding.connectionStatusText.text = getString(R.string.connected)
-                    binding.disconnectButton.isVisible = true
-                }
+                binding.connectionStatusText.text = getString(R.string.connected)
                 binding.connectionStatusText.setTextColor(
-                    ContextCompat.getColor(requireContext(), R.color.concentration_high)
+                    ContextCompat.getColor(requireContext(), R.color.success)
                 )
+                binding.statusDot.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    ContextCompat.getColor(requireContext(), R.color.success)
+                )
+                stopPulseAnimation()
                 binding.scanButton.isVisible = false
+                binding.disconnectButton.isVisible = true
             }
             is ConnectionState.Error -> {
                 binding.connectionStatusText.text = state.message
                 binding.connectionStatusText.setTextColor(
-                    ContextCompat.getColor(requireContext(), R.color.concentration_low)
+                    ContextCompat.getColor(requireContext(), R.color.error)
                 )
-                binding.startGameButton.isEnabled = viewModel.isTestMode.value
+                binding.statusDot.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    ContextCompat.getColor(requireContext(), R.color.error)
+                )
+                stopPulseAnimation()
                 binding.scanButton.isVisible = true
                 binding.disconnectButton.isVisible = false
             }
         }
     }
 
+    private fun startPulseAnimation() {
+        pulseAnimator?.cancel()
+        pulseAnimator = ObjectAnimator.ofFloat(binding.statusDot, "scaleX", 1f, 1.5f, 1f).apply {
+            duration = 1200
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
+        }
+        ObjectAnimator.ofFloat(binding.statusDot, "scaleY", 1f, 1.5f, 1f).apply {
+            duration = 1200
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
+        }
+    }
+
+    private fun stopPulseAnimation() {
+        pulseAnimator?.cancel()
+        pulseAnimator = null
+        binding.statusDot.scaleX = 1f
+        binding.statusDot.scaleY = 1f
+    }
+
     private fun updateScanUI(state: ScanState) {
         when (state) {
             is ScanState.Idle -> {
-                binding.scanningProgress.isVisible = false
+                binding.scanningTextContainer.isVisible = false
                 binding.noDevicesText.isVisible = false
                 binding.scanButton.isEnabled = true
             }
             is ScanState.Scanning -> {
-                binding.scanningProgress.isVisible = true
+                binding.scanningTextContainer.isVisible = true
                 binding.noDevicesText.isVisible = false
+                binding.deviceRecyclerView.isVisible = false
                 binding.scanButton.isEnabled = false
             }
             is ScanState.DevicesFound -> {
-                binding.scanningProgress.isVisible = false
+                binding.scanningTextContainer.isVisible = false
                 binding.deviceRecyclerView.isVisible = state.devices.isNotEmpty()
                 binding.noDevicesText.isVisible = state.devices.isEmpty()
                 deviceAdapter.submitList(state.devices)
                 binding.scanButton.isEnabled = true
             }
             is ScanState.NoDevicesFound -> {
-                binding.scanningProgress.isVisible = false
+                binding.scanningTextContainer.isVisible = false
                 binding.deviceRecyclerView.isVisible = false
                 binding.noDevicesText.isVisible = true
                 binding.noDevicesText.text = getString(R.string.no_brainbit_devices)
                 binding.scanButton.isEnabled = true
             }
             is ScanState.Error -> {
-                binding.scanningProgress.isVisible = false
+                binding.scanningTextContainer.isVisible = false
                 binding.noDevicesText.isVisible = true
                 binding.noDevicesText.text = state.message
                 Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
@@ -213,22 +265,9 @@ class ConnectionFragment : Fragment() {
         viewModel.connect(requireContext(), device)
     }
 
-    private fun startGame() {
-        if (!viewModel.canStartGame.value) {
-            Toast.makeText(
-                requireContext(),
-                R.string.connect_device_hint,
-                Toast.LENGTH_SHORT
-            ).show()
-            return
-        }
-
-        val testMode = viewModel.isTestMode.value
-        (activity as? MainActivity)?.navigateToGame(testMode)
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
+        stopPulseAnimation()
         _binding = null
     }
 }

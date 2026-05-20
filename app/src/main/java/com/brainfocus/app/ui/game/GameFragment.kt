@@ -10,7 +10,6 @@ import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.brainfocus.app.R
-import com.brainfocus.app.brainbit.MockConcentrationGenerator
 import com.brainfocus.app.databinding.FragmentGameBinding
 import com.brainfocus.app.ui.MainActivity
 import com.brainfocus.app.ui.connection.ConnectionViewModel
@@ -26,26 +25,6 @@ class GameFragment : Fragment() {
     private val connectionViewModel: ConnectionViewModel by activityViewModels()
 
     private var concentrationUpdateJob: Job? = null
-    private var isTestMode: Boolean = false
-
-    companion object {
-        private const val ARG_TEST_MODE = "test_mode"
-
-        fun newInstance(testMode: Boolean): GameFragment {
-            return GameFragment().apply {
-                arguments = Bundle().apply {
-                    putBoolean(ARG_TEST_MODE, testMode)
-                }
-            }
-        }
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            isTestMode = it.getBoolean(ARG_TEST_MODE, false)
-        }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -62,6 +41,7 @@ class GameFragment : Fragment() {
         setupClickListeners()
         observeGameState()
         observeConcentration()
+        observeBattery()
     }
 
     private fun setupGameView() {
@@ -100,17 +80,37 @@ class GameFragment : Fragment() {
 
     private fun observeConcentration() {
         concentrationUpdateJob = viewLifecycleOwner.lifecycleScope.launch {
-            val concentrationFlow = if (isTestMode) {
-                MockConcentrationGenerator.flow
-            } else {
-                connectionViewModel.concentration
-            }
-
-            concentrationFlow.collectLatest { concentration ->
+            connectionViewModel.concentration.collectLatest { concentration ->
                 binding.gameView.setConcentration(concentration)
                 viewModel.addConcentrationSample(concentration)
                 updateConcentrationUI(concentration)
             }
+        }
+    }
+
+    private fun observeBattery() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            connectionViewModel.batteryLevel.collectLatest { level ->
+                updateBatteryUI(level)
+            }
+        }
+    }
+
+    private fun updateBatteryUI(level: Int?) {
+        if (level != null) {
+            binding.batteryIndicator.visibility = View.VISIBLE
+            binding.batteryText.text = getString(R.string.battery_level, level)
+
+            val colorRes = when {
+                level >= 50 -> R.color.success
+                level >= 20 -> R.color.warning
+                else -> R.color.error
+            }
+            binding.batteryIcon.setColorFilter(
+                ContextCompat.getColor(requireContext(), colorRes)
+            )
+        } else {
+            binding.batteryIndicator.visibility = View.GONE
         }
     }
 
@@ -120,9 +120,9 @@ class GameFragment : Fragment() {
         binding.concentrationValue.text = "$percentage%"
 
         val color = when {
-            concentration >= 0.7f -> R.color.concentration_high
-            concentration >= 0.3f -> R.color.concentration_medium
-            else -> R.color.concentration_low
+            concentration >= 0.7f -> R.color.success
+            concentration >= 0.3f -> R.color.warning
+            else -> R.color.error
         }
 
         val colorInt = ContextCompat.getColor(requireContext(), color)

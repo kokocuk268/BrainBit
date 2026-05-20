@@ -17,5 +17,7 @@ sealed class ScanState {
 
 data class BrainBitDevice(
     val name: String,
-    val address: String
+    val address: String,
+    val serialNumber: String = "",
+    val batteryLevel: Int? = null
 )
