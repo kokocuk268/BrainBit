@@ -1,20 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
+    <color name="background">#1A1A1E</color>
+    <color name="surface">#252529</color>
+    <color name="surface_elevated">#2D2D32</color>
+    <color name="primary">#FF8C42</color>
+    <color name="primary_variant">#E07530</color>
+    <color name="secondary">#FFAB76</color>
+    <color name="on_background">#E8E6E3</color>
+    <color name="on_surface">#A8A6A3</color>
+    <color name="outline">#333338</color>
+    <color name="success">#4CAF50</color>
+    <color name="warning">#FFC107</color>
+    <color name="error">#F44336</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="background_dark">#121212</color>
-    <color name="surface_dark">#1E1E1E</color>
-    <color name="primary">#6200EE</color>
-    <color name="primary_variant">#3700B3</color>
-    <color name="secondary">#03DAC6</color>
-    <color name="concentration_high">#4CAF50</color>
-    <color name="concentration_medium">#FFC107</color>
-    <color name="concentration_low">#F44336</color>
-    <color name="player_color">#03DAC6</color>
-    <color name="obstacle_color">#FF5722</color>
+    <color name="black">#FF000000</color>
+    <color name="graph_o1">#FF6B35</color>
+    <color name="graph_o2">#4ECDC4</color>
+    <color name="graph_t3">#FFD166</color>
+    <color name="graph_t4">#EF476F</color>
+    <color name="graph_grid">#333338</color>
+    <color name="graph_grid_center">#555560</color>
+    <color name="ripple_orange">#33FF8C42</color>
 </resources>

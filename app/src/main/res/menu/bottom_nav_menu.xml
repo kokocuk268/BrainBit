@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_connection"
+        android:icon="@drawable/ic_nav_connection"
+        android:title="@string/nav_connection" />
+    <item
+        android:id="@+id/nav_sensor_test"
+        android:icon="@drawable/ic_nav_test"
+        android:title="@string/nav_sensor_test" />
+    <item
+        android:id="@+id/nav_games"
+        android:icon="@drawable/ic_nav_games"
+        android:title="@string/nav_games" />
+</menu>

@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_dark"
+    android:background="@color/background"
     android:padding="32dp">
 
     <TextView
@@ -13,7 +13,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/game_over"
-        android:textColor="@color/concentration_low"
+        android:textColor="@color/error"
         android:textSize="36sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toTopOf="@id/scoreCard"
@@ -27,7 +27,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
-        app:cardBackgroundColor="@color/surface_dark"
+        app:cardBackgroundColor="@color/surface"
         app:cardCornerRadius="16dp"
         app:layout_constraintBottom_toTopOf="@id/playAgainButton"
         app:layout_constraintEnd_toEndOf="parent"
@@ -53,7 +53,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:textColor="@color/white"
+                android:textColor="@color/on_background"
                 android:textSize="48sp"
                 android:textStyle="bold"
                 tools:text="1250" />
@@ -76,7 +76,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:textColor="@color/white"
+                android:textColor="@color/on_background"
                 android:textSize="32sp"
                 android:textStyle="bold"
                 tools:text="65%" />
@@ -105,7 +105,7 @@
         android:layout_height="56dp"
         android:layout_marginTop="12dp"
         android:text="@string/main_menu"
-        android:textColor="@color/white"
+        android:textColor="@color/on_background"
         android:textSize="18sp"
         app:strokeColor="@color/primary"
         app:layout_constraintBottom_toBottomOf="parent"
