@@ -8,6 +8,8 @@ import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import androidx.core.content.ContextCompat
+import com.brainfocus.app.R
 import com.brainfocus.app.game.models.Obstacle
 import com.brainfocus.app.game.models.Player
 import com.brainfocus.app.utils.SensorHelper
@@ -50,7 +52,7 @@ class GameView @JvmOverloads constructor(
     private var gameStartTime = 0L
 
     private val playerPaint = Paint().apply {
-        color = Color.parseColor("#03DAC6")
+        color = Color.parseColor("#FF8C42")
         style = Paint.Style.FILL
         isAntiAlias = true
     }
@@ -62,7 +64,6 @@ class GameView @JvmOverloads constructor(
     }
 
     private val backgroundPaint = Paint().apply {
-        color = Color.parseColor("#121212")
         style = Paint.Style.FILL
     }
 
@@ -79,6 +80,8 @@ class GameView @JvmOverloads constructor(
         viewWidth = width
         viewHeight = height
         playerY = height - 200f
+
+        backgroundPaint.color = ContextCompat.getColor(context, R.color.background)
 
         _player.value = Player(
             x = width / 2f - 50f,
