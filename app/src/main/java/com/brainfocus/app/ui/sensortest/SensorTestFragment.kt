@@ -88,7 +88,7 @@ class SensorTestFragment : Fragment() {
         val manager = connectionViewModel.getManager() ?: return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            manager.rawEEGData.collect { sample ->
+            manager.rawEEGData.collectLatest { sample ->
                 binding.eegGraphView.addSample(sample)
             }
         }

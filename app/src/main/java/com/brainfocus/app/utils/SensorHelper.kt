@@ -29,7 +29,7 @@ class SensorHelper(context: Context) {
         sensorManager.registerListener(
             listener,
             accelerometer,
-            SensorManager.SENSOR_DELAY_GAME
+            SensorManager.SENSOR_DELAY_UI
         )
 
         awaitClose {

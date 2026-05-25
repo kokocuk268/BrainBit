@@ -13,11 +13,12 @@
         android:layout_height="match_parent"
         android:layout_marginBottom="80dp" />
 
-    <com.brainfocus.app.ui.theme.DiagonalWipeView
-        android:id="@+id/diagonalWipeView"
+    <ImageView
+        android:id="@+id/themeTransitionOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginBottom="80dp"
+        android:scaleType="fitXY"
         android:visibility="gone" />
 
     <com.google.android.material.bottomnavigation.BottomNavigationView

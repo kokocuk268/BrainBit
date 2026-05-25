@@ -10,7 +10,7 @@ import android.view.View
 import androidx.core.content.ContextCompat
 import com.brainfocus.app.R
 import com.brainfocus.app.brainbit.EEGSample
-import java.util.LinkedList
+import kotlin.math.abs
 
 class EEGGraphView @JvmOverloads constructor(
     context: Context,
@@ -20,33 +20,29 @@ class EEGGraphView @JvmOverloads constructor(
 
     private val maxSamples = 500
 
-    private val o1Samples = LinkedList<Float>()
-    private val o2Samples = LinkedList<Float>()
-    private val t3Samples = LinkedList<Float>()
-    private val t4Samples = LinkedList<Float>()
+    private val o1Samples = RingBuffer(maxSamples)
+    private val o2Samples = RingBuffer(maxSamples)
+    private val t3Samples = RingBuffer(maxSamples)
+    private val t4Samples = RingBuffer(maxSamples)
 
-    private val paintO1 = Paint().apply {
+    private val paintO1 = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = 3f
-        isAntiAlias = true
     }
 
-    private val paintO2 = Paint().apply {
+    private val paintO2 = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = 3f
-        isAntiAlias = true
     }
 
-    private val paintT3 = Paint().apply {
+    private val paintT3 = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = 3f
-        isAntiAlias = true
     }
 
-    private val paintT4 = Paint().apply {
+    private val paintT4 = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = 3f
-        isAntiAlias = true
     }
 
     private val paintGrid = Paint().apply {
@@ -54,9 +50,10 @@ class EEGGraphView @JvmOverloads constructor(
         strokeWidth = 1f
     }
 
-    private val paintText = Paint().apply {
-        textSize = 28f
-        isAntiAlias = true
+    private val paintGridCenter = Paint().apply {
+        color = Color.GRAY
+        strokeWidth = 1.5f
+        style = Paint.Style.STROKE
     }
 
     private val paintBackground = Paint().apply {
@@ -64,6 +61,14 @@ class EEGGraphView @JvmOverloads constructor(
     }
 
     private var scale = 1e-4f
+    private var currentMaxAbs = 0f
+    private var needScaleRecalc = false
+    private var recalcCounter = 0
+
+    private val pathO1 = Path()
+    private val pathO2 = Path()
+    private val pathT3 = Path()
+    private val pathT4 = Path()
 
     init {
         updateColors()
@@ -75,8 +80,8 @@ class EEGGraphView @JvmOverloads constructor(
         paintT3.color = ContextCompat.getColor(context, R.color.graph_t3)
         paintT4.color = ContextCompat.getColor(context, R.color.graph_t4)
         paintGrid.color = ContextCompat.getColor(context, R.color.graph_grid)
+        paintGridCenter.color = ContextCompat.getColor(context, R.color.graph_grid_center)
         paintBackground.color = ContextCompat.getColor(context, R.color.surface)
-        paintText.color = ContextCompat.getColor(context, R.color.on_surface)
     }
 
     fun addSample(sample: EEGSample) {
@@ -85,25 +90,19 @@ class EEGGraphView @JvmOverloads constructor(
         t3Samples.add(sample.t3)
         t4Samples.add(sample.t4)
 
-        if (o1Samples.size > maxSamples) {
-            o1Samples.removeFirst()
-            o2Samples.removeFirst()
-            t3Samples.removeFirst()
-            t4Samples.removeFirst()
+        val newMax = abs(sample.o1)
+            .coerceAtLeast(abs(sample.o2))
+            .coerceAtLeast(abs(sample.t3))
+            .coerceAtLeast(abs(sample.t4))
+
+        if (newMax > currentMaxAbs) {
+            currentMaxAbs = newMax
+            if (newMax > 0) scale = newMax * 1.2f
         }
 
-        updateScale()
+        needScaleRecalc = true
+
         postInvalidateOnAnimation()
-    }
-
-    private fun updateScale() {
-        val allValues = o1Samples + o2Samples + t3Samples + t4Samples
-        if (allValues.isEmpty()) return
-
-        val maxAbs = allValues.maxOf { kotlin.math.abs(it) }
-        if (maxAbs > 0) {
-            scale = maxAbs * 1.2f
-        }
     }
 
     fun clear() {
@@ -111,6 +110,8 @@ class EEGGraphView @JvmOverloads constructor(
         o2Samples.clear()
         t3Samples.clear()
         t4Samples.clear()
+        currentMaxAbs = 0f
+        scale = 1e-4f
         invalidate()
     }
 
@@ -123,12 +124,33 @@ class EEGGraphView @JvmOverloads constructor(
 
         if (o1Samples.isEmpty()) return
 
-        drawChannel(canvas, o1Samples, paintO1)
-        drawChannel(canvas, o2Samples, paintO2)
-        drawChannel(canvas, t3Samples, paintT3)
-        drawChannel(canvas, t4Samples, paintT4)
+        recalcScaleIfNeeded()
+
+        drawChannel(canvas, o1Samples, paintO1, pathO1)
+        drawChannel(canvas, o2Samples, paintO2, pathO2)
+        drawChannel(canvas, t3Samples, paintT3, pathT3)
+        drawChannel(canvas, t4Samples, paintT4, pathT4)
 
         drawLegend(canvas)
+    }
+
+    private fun recalcScaleIfNeeded() {
+        if (!needScaleRecalc) return
+        recalcCounter++
+        if (recalcCounter < 60) return
+        recalcCounter = 0
+        needScaleRecalc = false
+
+        var maxAbs = 0f
+        o1Samples.forEach { maxAbs = maxOf(maxAbs, abs(it)) }
+        o2Samples.forEach { maxAbs = maxOf(maxAbs, abs(it)) }
+        t3Samples.forEach { maxAbs = maxOf(maxAbs, abs(it)) }
+        t4Samples.forEach { maxAbs = maxOf(maxAbs, abs(it)) }
+
+        if (maxAbs > 0) {
+            currentMaxAbs = maxAbs
+            scale = maxAbs * 1.2f
+        }
     }
 
     private fun drawGrid(canvas: Canvas) {
@@ -140,31 +162,29 @@ class EEGGraphView @JvmOverloads constructor(
             canvas.drawLine(0f, y, width.toFloat(), y, paintGrid)
         }
 
-        canvas.drawLine(0f, centerY, width.toFloat(), centerY, Paint().apply {
-            color = ContextCompat.getColor(context, R.color.graph_grid_center)
-            strokeWidth = 1.5f
-            style = Paint.Style.STROKE
-        })
+        canvas.drawLine(0f, centerY, width.toFloat(), centerY, paintGridCenter)
     }
 
-    private fun drawChannel(canvas: Canvas, samples: LinkedList<Float>, paint: Paint) {
-        if (samples.size < 2) return
+    private fun drawChannel(canvas: Canvas, buffer: RingBuffer, paint: Paint, path: Path) {
+        if (buffer.size < 2) return
 
-        val path = Path()
+        path.rewind()
         val widthStep = width.toFloat() / (maxSamples - 1)
-
         val centerY = height / 2f
         val amplitudeScale = (height / 2f) / scale
 
-        var x = (maxSamples - samples.size) * widthStep
+        var x = (maxSamples - buffer.size) * widthStep
+        var first = true
 
-        val firstY = centerY - (samples[0] * amplitudeScale)
-        path.moveTo(x, firstY)
-
-        for (i in 1 until samples.size) {
+        buffer.forEach { value ->
+            val y = centerY - (value * amplitudeScale)
+            if (first) {
+                path.moveTo(x, y)
+                first = false
+            } else {
+                path.lineTo(x, y)
+            }
             x += widthStep
-            val y = centerY - (samples[i] * amplitudeScale)
-            path.lineTo(x, y)
         }
 
         canvas.drawPath(path, paint)
@@ -179,5 +199,35 @@ class EEGGraphView @JvmOverloads constructor(
         canvas.drawText("O2", legendX + spacing, legendY, paintO2)
         canvas.drawText("T3", legendX + spacing * 2, legendY, paintT3)
         canvas.drawText("T4", legendX + spacing * 3, legendY, paintT4)
+    }
+
+    private class RingBuffer(private val capacity: Int) {
+        private val buffer = FloatArray(capacity)
+        private var writeIndex = 0
+        private var _size = 0
+
+        val size: Int get() = _size
+
+        fun isEmpty(): Boolean = _size == 0
+
+        fun add(value: Float) {
+            buffer[writeIndex] = value
+            writeIndex = if (writeIndex + 1 < capacity) writeIndex + 1 else 0
+            if (_size < capacity) _size++
+        }
+
+        inline fun forEach(action: (Float) -> Unit) {
+            if (_size == 0) return
+            val start = if (_size < capacity) 0 else writeIndex
+            for (i in 0 until _size) {
+                val idx = start + i
+                action(buffer[if (idx < capacity) idx else idx - capacity])
+            }
+        }
+
+        fun clear() {
+            writeIndex = 0
+            _size = 0
+        }
     }
 }
