@@ -13,15 +13,12 @@ data class Obstacle(
     var y: Float,
     val width: Float = 60f,
     val height: Float = 60f,
-    var speed: Float = 8f,
-    var speedFactor: Float = 1f
+    var speed: Float = 8f
 ) {
-    fun updateSpeed(concentration: Float) {
-        speedFactor = when {
-            concentration >= 0.7f -> 0.5f
-            concentration >= 0.3f -> 0.75f
-            else -> 1.0f
-        }
+    fun reset() {
+        x = 0f
+        y = 0f
+        speed = 8f
     }
 }
 

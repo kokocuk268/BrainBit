@@ -42,6 +42,10 @@ class GameFragment : Fragment() {
         observeGameState()
         observeConcentration()
         observeBattery()
+        // Reset the game state every time we enter the game fragment
+        viewModel.reset()
+        // Provide the game view model to connection view model for state reset on disconnect
+        connectionViewModel.setGameViewModel(viewModel)
     }
 
     private fun setupGameView() {

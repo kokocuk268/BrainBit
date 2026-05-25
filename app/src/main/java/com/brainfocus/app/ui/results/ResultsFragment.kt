@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import com.brainfocus.app.databinding.FragmentResultsBinding
 import com.brainfocus.app.ui.MainActivity
 
@@ -65,7 +66,9 @@ class ResultsFragment : Fragment() {
         }
 
         binding.mainMenuButton.setOnClickListener {
-            (activity as? MainActivity)?.navigateToConnection()
+            val activity = requireActivity() as MainActivity
+            activity.supportFragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
+            activity.navigateToConnection()
         }
     }
 

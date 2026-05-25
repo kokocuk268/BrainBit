@@ -71,15 +71,23 @@ class BrainBitManager(private val context: Context) {
 
     private val concentrationProcessor = ConcentrationProcessor()
     private var connectionTimeoutJob: Job? = null
-    private val batteryBuffer = mutableListOf<Int>()
-    private val batteryBufferSize = 5
+    private var smoothedBattery = -1f
+    private var concentrationJob: Job? = null
+    private var scanTimeoutJob: Job? = null
+    private var scanJob: Job? = null
 
     private fun clearBleCache(): Boolean {
         return try {
             val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
             val adapter = bluetoothManager.adapter ?: return false
+            @Suppress("PrivateApi")
             val method = adapter.javaClass.getMethod("clearGattCache")
             method.invoke(adapter) as Boolean
+        } catch (e: NoSuchMethodException) {
+            false
+        } catch (e: SecurityException) {
+            Log.w(TAG, "clearGattCache недоступен: ${e.message}")
+            false
         } catch (e: Exception) {
             Log.w(TAG, "Не удалось очистить BLE-кэш: ${e.message}")
             false
@@ -87,15 +95,16 @@ class BrainBitManager(private val context: Context) {
     }
 
     private fun smoothBatteryValue(newValue: Int): Int {
-        batteryBuffer.add(newValue)
-        if (batteryBuffer.size > batteryBufferSize) {
-            batteryBuffer.removeAt(0)
+        if (smoothedBattery < 0) {
+            smoothedBattery = newValue.toFloat()
+            return newValue
         }
-        val sorted = batteryBuffer.sorted()
-        return sorted[sorted.size / 2]
+        smoothedBattery = smoothedBattery * 0.7f + newValue * 0.3f
+        return smoothedBattery.toInt()
     }
 
     suspend fun startScan(): List<BrainBitDevice> {
+        scanTimeoutJob?.cancel()
         val deferred = CompletableDeferred<List<BrainBitDevice>>()
 
         try {
@@ -138,7 +147,7 @@ class BrainBitManager(private val context: Context) {
             scanner?.start()
             Log.d(TAG, "Scanner запущен")
 
-            scope.launch {
+            scanTimeoutJob = scope.launch {
                 delay(10000)
                 scanner?.stop()
                 Log.d(TAG, "Scanner остановлен")
@@ -170,20 +179,23 @@ class BrainBitManager(private val context: Context) {
                 deferred.complete(devices)
             }
 
+            return deferred.await()
+
         } catch (e: SecurityException) {
             Log.e(TAG, "Нет разрешений Bluetooth: ${e.message}")
             _scanState.value = ScanState.Error("Нет разрешений Bluetooth")
             deferred.complete(emptyList())
+            return emptyList()
         } catch (e: Exception) {
             Log.e(TAG, "Ошибка сканирования: ${e.message}")
             _scanState.value = ScanState.Error(e.message ?: "Ошибка сканирования")
             deferred.complete(emptyList())
+            return emptyList()
         }
-
-        return deferred.await()
     }
 
     fun stopScan() {
+        scanTimeoutJob?.cancel()
         scanner?.stop()
         _scanState.value = ScanState.Idle
     }
@@ -287,7 +299,7 @@ class BrainBitManager(private val context: Context) {
     private fun setupAfterConnection() {
         Log.d(TAG, "Настройка после подключения")
 
-        batteryBuffer.clear()
+        smoothedBattery = -1f
 
         brainBit?.batteryChanged = object : Sensor.BatteryChanged {
             override fun onBatteryChanged(power: Int) {
@@ -309,6 +321,7 @@ class BrainBitManager(private val context: Context) {
 
         startReceivingEEG()
         startResistanceTest()
+        startConcentrationProcessing()
     }
 
     private fun startReceivingEEG() {
@@ -316,18 +329,22 @@ class BrainBitManager(private val context: Context) {
             Log.d(TAG, "Запуск приёма EEG сигнала...")
             brainBit?.brainBitSignalDataReceived = object : BrainBitSignalDataReceived {
                 override fun onBrainBitSignalDataReceived(data: Array<out com.neurosdk2.neuro.types.BrainBitSignalData>) {
-                    for (sample in data) {
-                        val eegSample = EEGSample(
-                            o1 = sample.getO1().toFloat(),
-                            o2 = sample.getO2().toFloat(),
-                            t3 = sample.getT3().toFloat(),
-                            t4 = sample.getT4().toFloat()
-                        )
-                        _rawEEGData.tryEmit(eegSample)
+                    try {
+                        for (sample in data) {
+                            val eegSample = EEGSample(
+                                o1 = sample.getO1().toFloat(),
+                                o2 = sample.getO2().toFloat(),
+                                t3 = sample.getT3().toFloat(),
+                                t4 = sample.getT4().toFloat()
+                            )
+                            _rawEEGData.tryEmit(eegSample)
 
-                        val allSamples = listOf(eegSample.o1, eegSample.o2, eegSample.t3, eegSample.t4).toFloatArray()
-                        val concentration = concentrationProcessor.processSamples(allSamples)
-                        _concentration.value = concentration
+                            val allSamples = listOf(eegSample.o1, eegSample.o2, eegSample.t3, eegSample.t4).toFloatArray()
+                            val concentration = concentrationProcessor.processSamples(allSamples)
+                            _concentration.value = concentration
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Ошибка обработки EEG семпла: ${e.message}")
                     }
                 }
             }
@@ -344,19 +361,34 @@ class BrainBitManager(private val context: Context) {
             Log.d(TAG, "Запуск теста сопротивления...")
             brainBit?.brainBitResistDataReceived = object : BrainBitResistDataReceived {
                 override fun onBrainBitResistDataReceived(data: com.neurosdk2.neuro.types.BrainBitResistData) {
-                    val resistSample = ResistanceSample(
-                        o1 = data.getO1().toFloat(),
-                        o2 = data.getO2().toFloat(),
-                        t3 = data.getT3().toFloat(),
-                        t4 = data.getT4().toFloat()
-                    )
-                    _resistanceData.value = resistSample
+                    try {
+                        val resistSample = ResistanceSample(
+                            o1 = data.getO1().toFloat(),
+                            o2 = data.getO2().toFloat(),
+                            t3 = data.getT3().toFloat(),
+                            t4 = data.getT4().toFloat()
+                        )
+                        _resistanceData.value = resistSample
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Ошибка обработки данных сопротивления: ${e.message}")
+                    }
                 }
             }
             brainBit?.execCommand(SensorCommand.StartResist)
             Log.d(TAG, "Тест сопротивления запущен")
         } catch (e: Exception) {
             Log.e(TAG, "Ошибка запуска теста сопротивления: ${e.message}")
+        }
+    }
+
+    private fun startConcentrationProcessing() {
+        concentrationJob?.cancel()
+        concentrationJob = scope.launch {
+            _rawEEGData.collect { sample ->
+                val samples = floatArrayOf(sample.o1, sample.o2, sample.t3, sample.t4)
+                val concentration = concentrationProcessor.processSamples(samples)
+                _concentration.value = concentration
+            }
         }
     }
 
@@ -376,7 +408,11 @@ class BrainBitManager(private val context: Context) {
         try {
             Log.d(TAG, "Отключение...")
             brainBit?.execCommand(SensorCommand.StopSignal)
-            stopResistanceTest()
+        } catch (e: Exception) {
+            Log.w(TAG, "Ошибка остановки сигнала: ${e.message}")
+        }
+        stopResistanceTest()
+        try {
             brainBit?.disconnect()
             brainBit?.close()
             Log.d(TAG, "Отключено")
@@ -384,10 +420,12 @@ class BrainBitManager(private val context: Context) {
             Log.w(TAG, "Ошибка при отключении: ${e.message}")
         }
 
+        concentrationJob?.cancel()
+        concentrationJob = null
         scanner?.close()
         brainBit = null
         scanner = null
-        batteryBuffer.clear()
+        smoothedBattery = -1f
         _batteryLevel.value = null
         _deviceInfo.value = null
         _resistanceData.value = null

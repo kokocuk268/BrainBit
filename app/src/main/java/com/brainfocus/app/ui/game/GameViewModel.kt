@@ -18,6 +18,7 @@ class GameViewModel : ViewModel() {
     val isGameOver: StateFlow<Boolean> = _isGameOver.asStateFlow()
 
     private val concentrationHistory = mutableListOf<Float>()
+    private var concentrationSum = 0f
 
     fun updateScore(score: Int) {
         _gameScore.value = score
@@ -25,8 +26,9 @@ class GameViewModel : ViewModel() {
 
     fun addConcentrationSample(concentration: Float) {
         concentrationHistory.add(concentration)
+        concentrationSum += concentration
         if (concentrationHistory.isNotEmpty()) {
-            _averageConcentration.value = concentrationHistory.average().toFloat()
+            _averageConcentration.value = concentrationSum / concentrationHistory.size
         }
     }
 
@@ -38,6 +40,7 @@ class GameViewModel : ViewModel() {
         _gameScore.value = 0
         _isGameOver.value = false
         concentrationHistory.clear()
+        concentrationSum = 0f
         _averageConcentration.value = 0f
     }
 

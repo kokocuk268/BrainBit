@@ -30,6 +30,7 @@ class ConnectionFragment : Fragment() {
     private val viewModel: ConnectionViewModel by activityViewModels { ConnectionViewModelFactory() }
     private lateinit var deviceAdapter: DeviceAdapter
     private var pulseAnimator: ObjectAnimator? = null
+    private var pulseAnimatorScaleY: ObjectAnimator? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -202,13 +203,14 @@ class ConnectionFragment : Fragment() {
 
     private fun startPulseAnimation() {
         pulseAnimator?.cancel()
+        pulseAnimatorScaleY?.cancel()
         pulseAnimator = ObjectAnimator.ofFloat(binding.statusDot, "scaleX", 1f, 1.5f, 1f).apply {
             duration = 1200
             repeatCount = ObjectAnimator.INFINITE
             interpolator = AccelerateDecelerateInterpolator()
             start()
         }
-        ObjectAnimator.ofFloat(binding.statusDot, "scaleY", 1f, 1.5f, 1f).apply {
+        pulseAnimatorScaleY = ObjectAnimator.ofFloat(binding.statusDot, "scaleY", 1f, 1.5f, 1f).apply {
             duration = 1200
             repeatCount = ObjectAnimator.INFINITE
             interpolator = AccelerateDecelerateInterpolator()
@@ -219,6 +221,8 @@ class ConnectionFragment : Fragment() {
     private fun stopPulseAnimation() {
         pulseAnimator?.cancel()
         pulseAnimator = null
+        pulseAnimatorScaleY?.cancel()
+        pulseAnimatorScaleY = null
         binding.statusDot.scaleX = 1f
         binding.statusDot.scaleY = 1f
     }
