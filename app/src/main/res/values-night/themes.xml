@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.BrainFocus" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorOnPrimary">@color/white</item>
@@ -12,9 +12,9 @@
         <item name="colorOnError">@color/white</item>
         <item name="android:statusBarColor">@color/background</item>
         <item name="android:navigationBarColor">@color/background</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:fontFamily">@font/inter</item>
-        <item name="fontFamily">@font/inter</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="fontFamily">sans-serif</item>
         <item name="materialButtonStyle">@style/BrainFocus.Button</item>
         <item name="materialCardViewStyle">@style/BrainFocus.Card</item>
     </style>
@@ -27,7 +27,7 @@
     </style>
 
     <style name="BrainFocus.ButtonText" parent="TextAppearance.Material3.LabelLarge">
-        <item name="fontFamily">@font/inter_medium</item>
+        <item name="fontFamily">sans-serif-medium</item>
     </style>
 
     <style name="BrainFocus.Card" parent="Widget.Material3.CardView.Filled">

@@ -49,7 +49,7 @@ class GameFragment : Fragment() {
     }
 
     private fun setupGameView() {
-        binding.gameView.startGame()
+        // GameView starts after SurfaceHolder reports a valid surface.
     }
 
     private fun setupClickListeners() {

@@ -25,7 +25,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/inter_bold"
+                android:fontFamily="sans-serif"
                 android:text="Игры"
                 android:textColor="@color/on_background"
                 android:textSize="28sp" />
@@ -34,7 +34,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:fontFamily="@font/inter_medium"
+                android:fontFamily="sans-serif-medium"
                 android:text="Выберите игру для тренировки"
                 android:textColor="@color/on_surface"
                 android:textSize="14sp" />
@@ -74,7 +74,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/inter_bold"
+                            android:fontFamily="sans-serif"
                             android:text="Focus Game"
                             android:textColor="@color/on_background"
                             android:textSize="18sp" />
@@ -95,7 +95,7 @@
                         android:layout_height="48dp"
                         android:background="@drawable/bg_gradient_primary"
                         android:enabled="false"
-                        android:fontFamily="@font/inter_medium"
+                        android:fontFamily="sans-serif-medium"
                         android:text="Играть"
                         android:textSize="14sp"
                         app:backgroundTint="@null" />
@@ -139,7 +139,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/inter_bold"
+                            android:fontFamily="sans-serif"
                             android:text="Relax Game"
                             android:textColor="@color/on_background"
                             android:textSize="18sp" />
@@ -199,7 +199,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:fontFamily="@font/inter_bold"
+                            android:fontFamily="sans-serif"
                             android:text="Memory Game"
                             android:textColor="@color/on_background"
                             android:textSize="18sp" />

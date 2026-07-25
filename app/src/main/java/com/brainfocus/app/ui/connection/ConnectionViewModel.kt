@@ -24,6 +24,7 @@ class ConnectionViewModel : ViewModel() {
     private var batteryJob: Job? = null
     private var deviceInfoJob: Job? = null
     private var scanJob: Job? = null
+    private var scanRequestJob: Job? = null
     private var gameViewModel: GameViewModel? = null
 
     private val _connectionState: MutableStateFlow<ConnectionState> = MutableStateFlow(ConnectionState.Disconnected)
@@ -53,6 +54,7 @@ class ConnectionViewModel : ViewModel() {
 
     fun startScan(context: Context) {
         initialize(context)
+        stopScan()
         scanJob?.cancel()
         scanJob = viewModelScope.launch {
             val manager = brainBitManager!!
@@ -60,7 +62,7 @@ class ConnectionViewModel : ViewModel() {
                 _scanState.value = state
             }
         }
-        viewModelScope.launch {
+        scanRequestJob = viewModelScope.launch {
             brainBitManager?.startScan()
         }
     }
@@ -69,6 +71,8 @@ class ConnectionViewModel : ViewModel() {
         scanJob?.cancel()
         scanJob = null
         brainBitManager?.stopScan()
+        scanRequestJob?.cancel()
+        scanRequestJob = null
     }
 
     fun connect(context: Context, device: BrainBitDevice) {
@@ -140,6 +144,7 @@ class ConnectionViewModel : ViewModel() {
         batteryJob?.cancel()
         deviceInfoJob?.cancel()
         scanJob?.cancel()
+        scanRequestJob?.cancel()
         connectJob?.cancel()
         brainBitManager?.destroy()
     }

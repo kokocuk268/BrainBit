@@ -72,9 +72,8 @@ class BrainBitManager(private val context: Context) {
     private val concentrationProcessor = ConcentrationProcessor()
     private var connectionTimeoutJob: Job? = null
     private var smoothedBattery = -1f
-    private var concentrationJob: Job? = null
     private var scanTimeoutJob: Job? = null
-    private var scanJob: Job? = null
+    private var scanCompletion: CompletableDeferred<List<BrainBitDevice>>? = null
 
     private fun clearBleCache(): Boolean {
         return try {
@@ -105,7 +104,9 @@ class BrainBitManager(private val context: Context) {
 
     suspend fun startScan(): List<BrainBitDevice> {
         scanTimeoutJob?.cancel()
+        scanCompletion?.complete(emptyList())
         val deferred = CompletableDeferred<List<BrainBitDevice>>()
+        scanCompletion = deferred
 
         try {
             _scanState.value = ScanState.Scanning
@@ -181,6 +182,8 @@ class BrainBitManager(private val context: Context) {
 
             return deferred.await()
 
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: SecurityException) {
             Log.e(TAG, "Нет разрешений Bluetooth: ${e.message}")
             _scanState.value = ScanState.Error("Нет разрешений Bluetooth")
@@ -191,12 +194,19 @@ class BrainBitManager(private val context: Context) {
             _scanState.value = ScanState.Error(e.message ?: "Ошибка сканирования")
             deferred.complete(emptyList())
             return emptyList()
+        } finally {
+            if (scanCompletion === deferred) {
+                scanCompletion = null
+            }
         }
     }
 
     fun stopScan() {
         scanTimeoutJob?.cancel()
+        scanTimeoutJob = null
         scanner?.stop()
+        scanCompletion?.complete(emptyList())
+        scanCompletion = null
         _scanState.value = ScanState.Idle
     }
 
@@ -300,6 +310,7 @@ class BrainBitManager(private val context: Context) {
         Log.d(TAG, "Настройка после подключения")
 
         smoothedBattery = -1f
+        concentrationProcessor.reset()
 
         brainBit?.batteryChanged = object : Sensor.BatteryChanged {
             override fun onBatteryChanged(power: Int) {
@@ -321,7 +332,6 @@ class BrainBitManager(private val context: Context) {
 
         startReceivingEEG()
         startResistanceTest()
-        startConcentrationProcessing()
     }
 
     private fun startReceivingEEG() {
@@ -381,17 +391,6 @@ class BrainBitManager(private val context: Context) {
         }
     }
 
-    private fun startConcentrationProcessing() {
-        concentrationJob?.cancel()
-        concentrationJob = scope.launch {
-            _rawEEGData.collect { sample ->
-                val samples = floatArrayOf(sample.o1, sample.o2, sample.t3, sample.t4)
-                val concentration = concentrationProcessor.processSamples(samples)
-                _concentration.value = concentration
-            }
-        }
-    }
-
     fun stopResistanceTest() {
         try {
             brainBit?.execCommand(SensorCommand.StopResist)
@@ -420,8 +419,8 @@ class BrainBitManager(private val context: Context) {
             Log.w(TAG, "Ошибка при отключении: ${e.message}")
         }
 
-        concentrationJob?.cancel()
-        concentrationJob = null
+        concentrationProcessor.reset()
+        _concentration.value = 0.5f
         scanner?.close()
         brainBit = null
         scanner = null

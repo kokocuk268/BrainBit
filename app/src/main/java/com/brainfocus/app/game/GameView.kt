@@ -54,6 +54,7 @@ class GameView @JvmOverloads constructor(
     }
 
     private var gameStartTime = 0L
+    private var pauseStartedAt = 0L
 
     private var player: Player? = null
     private val obstacles = Array<Obstacle?>(32) { null }
@@ -117,7 +118,10 @@ class GameView @JvmOverloads constructor(
     }
 
     fun startGame() {
+        if (!holder.surface.isValid || gameThread?.isAlive == true) return
+
         gameStartTime = System.currentTimeMillis()
+        pauseStartedAt = 0L
         _score.value = 0
         obstaclesSize = 0
         _isGameOver.value = false
@@ -140,10 +144,17 @@ class GameView @JvmOverloads constructor(
     }
 
     fun pauseGame() {
+        if (_isPaused.value || _isGameOver.value) return
+        pauseStartedAt = System.currentTimeMillis()
         _isPaused.value = true
     }
 
     fun resumeGame() {
+        if (!_isPaused.value || _isGameOver.value) return
+        if (pauseStartedAt > 0L) {
+            gameStartTime += System.currentTimeMillis() - pauseStartedAt
+            pauseStartedAt = 0L
+        }
         _isPaused.value = false
     }
 

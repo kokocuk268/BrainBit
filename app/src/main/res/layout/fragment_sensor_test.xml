@@ -25,7 +25,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/inter_bold"
+                android:fontFamily="sans-serif"
                 android:text="Тест датчиков"
                 android:textColor="@color/on_background"
                 android:textSize="28sp" />
@@ -35,7 +35,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:fontFamily="@font/inter_medium"
+                android:fontFamily="sans-serif-medium"
                 android:text="Подключите устройство для начала теста"
                 android:textColor="@color/on_surface"
                 android:textSize="14sp" />

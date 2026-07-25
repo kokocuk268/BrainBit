@@ -41,7 +41,7 @@
                 android:id="@+id/deviceName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/inter_bold"
+                android:fontFamily="sans-serif"
                 android:textColor="@color/on_background"
                 android:textSize="16sp"
                 android:textStyle="bold"
@@ -52,7 +52,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:fontFamily="@font/inter_regular"
+                android:fontFamily="sans-serif"
                 android:textColor="@color/on_surface"
                 android:textSize="12sp"
                 tools:text="AA:BB:CC:DD:EE:FF" />
