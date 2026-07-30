@@ -54,26 +54,33 @@ func TestHealthLiveStatusCode(t *testing.T) {
 	}
 }
 
-func TestUnknownRouteStatusCode(t *testing.T) {
-	resp := performRequest(t, newRouter(), http.MethodGet, "/unknown")
-
-	if resp.Code != http.StatusNotFound {
-		t.Errorf(
-			"неверный StatusCode: получили %d, ожидали %d",
-			resp.Code,
-			http.StatusNotFound,
-		)
+func TestHealthRouting(t *testing.T) {
+	tests := []struct {
+		name       string
+		method     string
+		path       string
+		wantStatus int
+	}{
+		{
+			name:       "unknown route",
+			method:     http.MethodGet,
+			path:       "/unknown",
+			wantStatus: http.StatusNotFound,
+		},
+		{
+			name:       "method post",
+			method:     http.MethodPost,
+			path:       "/health/live",
+			wantStatus: http.StatusMethodNotAllowed,
+		},
 	}
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			resp := performRequest(t, newRouter(), test.method, test.path)
 
-func TestHealthLiveRejectsPost(t *testing.T) {
-	resp := performRequest(t, newRouter(), http.MethodPost, "/health/live")
-
-	if resp.Code != http.StatusMethodNotAllowed {
-		t.Errorf(
-			"неверный StatusCode: получили %d, ожидали %d",
-			resp.Code,
-			http.StatusMethodNotAllowed,
-		)
+			if resp.Code != test.wantStatus {
+				t.Fatalf("ошибка теста, получили %v, ожидали %v", resp.Code, test.wantStatus)
+			}
+		})
 	}
 }
