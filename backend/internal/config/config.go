@@ -1,6 +1,9 @@
 package config
 
-import "time"
+import (
+	"os"
+	"time"
+)
 
 type Config struct {
 	HTTPAddr          string
@@ -12,8 +15,12 @@ type Config struct {
 }
 
 func Load() Config {
+	addr := os.Getenv("HTTP_ADDR")
+	if addr == "" {
+		addr = ":8080"
+	}
 	return Config{
-		HTTPAddr:          ":8080",
+		HTTPAddr:          addr,
 		ReadTimeout:       10 * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout:      10 * time.Second,

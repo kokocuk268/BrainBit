@@ -5,9 +5,34 @@ import (
 	"time"
 )
 
-func TestLoad(t *testing.T) {
-	cfg := Load()
+func TestLoadHTTPAddr(t *testing.T) {
 
+	t.Run("default address", func(t *testing.T) {
+		t.Setenv("HTTP_ADDR", "")
+		cfg := Load()
+		if cfg.HTTPAddr != ":8080" {
+			t.Errorf(
+				"несовпадение HTTP_ADDR == \"\", но сервер имеет порт %v",
+				cfg.HTTPAddr,
+			)
+		}
+	})
+
+	t.Run("address from env", func(t *testing.T) {
+		t.Setenv("HTTP_ADDR", ":9090")
+		cfg := Load()
+		if cfg.HTTPAddr != ":9090" {
+			t.Errorf(
+				"несовпадение HTTP_ADDR == \":9090\", но сервер имеет порт %v",
+				cfg.HTTPAddr,
+			)
+		}
+	})
+}
+
+func TestLoadDefaults(t *testing.T) {
+	t.Setenv("HTTP_ADDR", "")
+	cfg := Load()
 	if cfg.HTTPAddr != ":8080" {
 		t.Errorf(
 			"несовпадение HTTPAddr | получили %v, ожидали %v",
