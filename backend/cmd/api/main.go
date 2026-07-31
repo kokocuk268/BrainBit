@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/kokocuk268/BrainBit/backend/internal/config"
 	"github.com/kokocuk268/BrainBit/backend/internal/httpserver"
 )
 
@@ -23,13 +24,14 @@ func main() {
 
 	errCh := make(chan error, 1)
 
+	cfg := config.Load()
 	serv := http.Server{
-		Addr:              ":8080",
+		Addr:              cfg.HTTPAddr,
 		Handler:           httpserver.NewRouter(),
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      10 * time.Second,
-		IdleTimeout:       60 * time.Second,
+		ReadHeaderTimeout: time.Second,
+		ReadTimeout:       cfg.ReadTimeout,
+		WriteTimeout:      cfg.WriteTimeout,
+		IdleTimeout:       cfg.IdleTimeout,
 	}
 
 	go func() {
@@ -52,7 +54,7 @@ func main() {
 		return
 	}
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
 	defer cancel()
 	if err := serv.Shutdown(shutdownCtx); err != nil {
 		fmt.Println(err)
