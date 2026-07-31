@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,28 +9,9 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/kokocuk268/BrainBit/backend/internal/httpserver"
 )
-
-type Resp struct {
-	Status string `json:"status"`
-}
-
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	js := Resp{Status: "ok"}
-	jsonByte, err := json.Marshal(js)
-	if err != nil {
-		http.Error(w, "ошибка 500", http.StatusInternalServerError)
-		return
-	}
-	fmt.Fprintln(w, string(jsonByte))
-}
-
-func newRouter() http.Handler {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health/live", healthHandler)
-	return mux
-}
 
 func main() {
 	ctx, stop := signal.NotifyContext(
@@ -45,7 +25,7 @@ func main() {
 
 	serv := http.Server{
 		Addr:              ":8080",
-		Handler:           newRouter(),
+		Handler:           httpserver.NewRouter(),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,
@@ -61,6 +41,7 @@ func main() {
 			errCh <- err
 		}
 	}()
+
 	select {
 	case <-ctx.Done():
 		// пришёл ctrl + c или sigterm
@@ -70,6 +51,7 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := serv.Shutdown(shutdownCtx); err != nil {

@@ -1,4 +1,4 @@
-package main
+package httpserver
 
 import (
 	"encoding/json"
@@ -23,13 +23,13 @@ func performRequest(
 }
 
 func TestHealthLiveStatusCode(t *testing.T) {
-	resp := performRequest(t, newRouter(), http.MethodGet, "/health/live")
+	resp := performRequest(t, NewRouter(), http.MethodGet, "/health/live")
 
 	if resp.Code != http.StatusOK {
 		t.Fatalf("ошибка сервера %d", resp.Code)
 	}
 
-	var respStatus Resp
+	var respStatus healthResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&respStatus); err != nil {
 		t.Fatalf("ошибка %v", err)
@@ -76,7 +76,7 @@ func TestHealthRouting(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			resp := performRequest(t, newRouter(), test.method, test.path)
+			resp := performRequest(t, NewRouter(), test.method, test.path)
 
 			if resp.Code != test.wantStatus {
 				t.Fatalf("ошибка теста, получили %v, ожидали %v", resp.Code, test.wantStatus)
