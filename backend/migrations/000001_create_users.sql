@@ -1,3 +1,5 @@
+-- +goose Up
+
 -- ТАБЛИЦА ПОЛЬЗОВАТЕЛЕЙ
 CREATE TABLE users (
     id UUID PRIMARY KEY,
@@ -5,3 +7,8 @@ CREATE TABLE users (
     password_hash TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- +goose Down
+
+-- УДАЛЕНИЕ ТАБЛИЦЫ ПОЛЬЗОВАТЕЛЕЙ
+DROP TABLE IF EXISTS users;
