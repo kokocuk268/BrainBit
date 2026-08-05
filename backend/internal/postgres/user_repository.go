@@ -2,8 +2,11 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kokocuk268/BrainBit/backend/internal/domain"
 )
@@ -34,6 +37,13 @@ func (u *UserRepository) Create(
 		user.PasswordHash,
 	)
 	if err != nil {
+		var pgErr *pgconn.PgError
+
+		if errors.As(err, &pgErr) &&
+			pgErr.Code == "23505" &&
+			pgErr.ConstraintName == "users_email_key" {
+			return domain.ErrEmailAlreadyExists
+		}
 		return fmt.Errorf("создание пользователя: %w", err)
 	}
 
@@ -67,6 +77,9 @@ func (u *UserRepository) FindByEmail(
 		&user.CreatedAt,
 	)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.User{}, domain.ErrUserNotFound
+		}
 		return domain.User{}, fmt.Errorf("ошибка получения данных: %w", err)
 	}
 
