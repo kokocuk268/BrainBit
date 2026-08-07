@@ -16,3 +16,8 @@ migrate-down-one:
 
 migrate-status:
 	goose -dir migrations postgres "$(DATABASE_URL)" status
+
+.PHONY: generate
+
+generate:
+	go tool oapi-codegen -config api/oapi-codegen.yaml api/openapi.yaml

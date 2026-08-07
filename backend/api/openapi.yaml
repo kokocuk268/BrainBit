@@ -10,6 +10,10 @@ servers:
 tags:
   - name: Auth
     description: Registration and authentication operations
+  - name: Sessions
+    description: Game session operations
+  - name: Leaderboard
+    description: Completed-session leaderboard operations
 
 paths:
   /v1/auth/register:
@@ -51,7 +55,350 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /v1/auth/login:
+    post:
+      security: []
+      tags:
+        - Auth
+      summary: Log in user
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: User successfully authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Invalid email or password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/sessions:
+    post:
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      tags:
+        - Sessions
+      summary: Create a new session
+      operationId: createSession
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionRequest"
+      responses:
+        "201":
+          description: Session successfully created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+              example:
+                id: "33333333-3333-4333-8333-333333333333"
+                status: active
+                started_at: "2026-08-07T12:00:00Z"
+                completed_at: null
+                final_score: null
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Idempotency key was reused with a different request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Sessions
+      summary: List user sessions
+      operationId: listSessions
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of sessions to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+        - name: cursor
+          in: query
+          required: false
+          description: Opaque cursor returned by the previous page
+          schema:
+            type: string
+          example: "MjAyNi0wOC0wN1QxMjowMDowMFp8MzMzMzMzMzMtMzMzMy00MzMzLTgzMzMtMzMzMzMzMzMzMzMz"
+      responses:
+        "200":
+          description: Session page returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListSessionsResponse"
+        "400":
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/sessions/{session_id}/metrics:batch:
+    post:
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      tags:
+        - Sessions
+      summary: Add metrics batch to session
+      operationId: addSessionMetrics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddMetricsRequest"
+      responses:
+        "200":
+          description: Metrics batch processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddMetricsResponse"
+        "400":
+          description: Invalid metrics batch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Metric sequence conflict or session already completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/sessions/{session_id}/complete:
+    post:
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      tags:
+        - Sessions
+      summary: Complete a session
+      operationId: completeSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteSessionRequest"
+      responses:
+        "200":
+          description: Session is completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+              example:
+                id: "33333333-3333-4333-8333-333333333333"
+                status: completed
+                started_at: "2026-08-07T12:00:00Z"
+                completed_at: "2026-08-07T12:15:30Z"
+                final_score: 850
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Idempotency key was reused with a different request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/sessions/{session_id}:
+    get:
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      tags:
+        - Sessions
+      summary: Get session details
+      operationId: getSession
+      responses:
+        "200":
+          description: Session details returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionDetailResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/leaderboard:
+    get:
+      security:
+        - bearerAuth: []
+      tags:
+        - Leaderboard
+      summary: Get completed-session leaderboard
+      operationId: getLeaderboard
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of leaderboard entries to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+        - name: scope
+          in: query
+          required: false
+          description: Global leaderboard or only the authenticated user's results
+          schema:
+            type: string
+            enum:
+              - global
+              - mine
+            default: global
+          example: global
+      responses:
+        "200":
+          description: Leaderboard returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaderboardResponse"
+        "400":
+          description: Invalid leaderboard parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    SessionId:
+      name: session_id
+      in: path
+      required: true
+      description: Session UUID
+      schema:
+        type: string
+        format: uuid
+      example: "33333333-3333-4333-8333-333333333333"
+
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: UUID identifying one logical command retry group
+      schema:
+        type: string
+        format: uuid
+        maxLength: 64
+      example: "44444444-4444-4444-8444-444444444444"
+
   schemas:
     RegisterRequest:
       type: object
@@ -70,6 +417,7 @@ components:
       example:
         email: user@example.com
         password: strong-password-123
+
     UserResponse:
       type: object
       additionalProperties: false
@@ -88,9 +436,332 @@ components:
           type: string
           format: date-time
       example:
-        id: "22222222-2222-4111-8111-222222222222"
+        id: "22222222-2222-4222-8222-222222222222"
         email: user@example.com
-        created_at: "2026-01-02T15:04:44Z"
+        created_at: "2026-08-07T11:45:00Z"
+
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+      example:
+        email: user@example.com
+        password: strong-password-123
+
+    LoginResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - access_token
+        - token_type
+        - expires_in
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          enum:
+            - Bearer
+        expires_in:
+          type: integer
+          minimum: 1
+      example:
+        access_token: example.jwt.token
+        token_type: Bearer
+        expires_in: 3600
+
+    CreateSessionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        client_version:
+          type: string
+          minLength: 1
+          maxLength: 64
+      example:
+        client_version: "1.0.0"
+
+    SessionResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - status
+        - started_at
+        - completed_at
+        - final_score
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - active
+            - completed
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        final_score:
+          type: integer
+          minimum: 0
+          nullable: true
+      example:
+        id: "33333333-3333-4333-8333-333333333333"
+        status: active
+        started_at: "2026-08-07T12:00:00Z"
+        completed_at: null
+        final_score: null
+
+    MetricInput:
+      type: object
+      additionalProperties: false
+      required:
+        - sequence
+        - recorded_at
+        - concentration
+        - score
+        - difficulty_multiplier
+      properties:
+        sequence:
+          type: integer
+          minimum: 0
+        recorded_at:
+          type: string
+          format: date-time
+        concentration:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+        score:
+          type: integer
+          minimum: 0
+        difficulty_multiplier:
+          type: number
+          format: double
+          minimum: 0.25
+          maximum: 2
+      example:
+        sequence: 42
+        recorded_at: "2026-07-24T12:00:01.250Z"
+        concentration: 0.73
+        score: 120
+        difficulty_multiplier: 0.5
+
+    AddMetricsRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - metrics
+      properties:
+        metrics:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/MetricInput"
+      example:
+        metrics:
+          - sequence: 42
+            recorded_at: "2026-07-24T12:00:01.250Z"
+            concentration: 0.73
+            score: 120
+            difficulty_multiplier: 0.5
+
+    AddMetricsResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - accepted_count
+        - duplicate_count
+      properties:
+        accepted_count:
+          type: integer
+          minimum: 0
+        duplicate_count:
+          type: integer
+          minimum: 0
+      example:
+        accepted_count: 8
+        duplicate_count: 2
+
+    CompleteSessionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - final_score
+      properties:
+        final_score:
+          type: integer
+          minimum: 0
+      example:
+        final_score: 850
+
+    SessionSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - session_id
+        - avg_concentration
+        - stability
+        - duration_ms
+        - max_score
+        - best_focus_streak_ms
+        - calculated_at
+        - algorithm_version
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        avg_concentration:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          nullable: true
+        stability:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          nullable: true
+        duration_ms:
+          type: integer
+          format: int64
+          minimum: 0
+        max_score:
+          type: integer
+          minimum: 0
+        best_focus_streak_ms:
+          type: integer
+          format: int64
+          minimum: 0
+        calculated_at:
+          type: string
+          format: date-time
+        algorithm_version:
+          type: string
+      example:
+        session_id: "33333333-3333-4333-8333-333333333333"
+        avg_concentration: 0.74
+        stability: 0.88
+        duration_ms: 930000
+        max_score: 850
+        best_focus_streak_ms: 12500
+        calculated_at: "2026-08-07T12:15:30Z"
+        algorithm_version: v1
+
+    SessionDetailResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - session
+      properties:
+        session:
+          $ref: "#/components/schemas/SessionResponse"
+        summary:
+          $ref: "#/components/schemas/SessionSummary"
+      example:
+        session:
+          id: "33333333-3333-4333-8333-333333333333"
+          status: completed
+          started_at: "2026-08-07T12:00:00Z"
+          completed_at: "2026-08-07T12:15:30Z"
+          final_score: 850
+        summary:
+          session_id: "33333333-3333-4333-8333-333333333333"
+          avg_concentration: 0.74
+          stability: 0.88
+          duration_ms: 930000
+          max_score: 850
+          best_focus_streak_ms: 12500
+          calculated_at: "2026-08-07T12:15:30Z"
+          algorithm_version: v1
+
+    ListSessionsResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - sessions
+        - next_cursor
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionResponse"
+        next_cursor:
+          type: string
+          nullable: true
+      example:
+        sessions:
+          - id: "33333333-3333-4333-8333-333333333333"
+            status: completed
+            started_at: "2026-08-07T12:00:00Z"
+            completed_at: "2026-08-07T12:15:30Z"
+            final_score: 850
+          - id: "55555555-5555-4555-8555-555555555555"
+            status: active
+            started_at: "2026-08-07T12:30:00Z"
+            completed_at: null
+            final_score: null
+        next_cursor: "MjAyNi0wOC0wN1QxMjozMDowMFp8NTU1NTU1NTUtNTU1NS00NTU1LTg1NTUtNTU1NTU1NTU1NTU1"
+
+    LeaderboardEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - rank
+        - final_score
+        - completed_at
+      properties:
+        rank:
+          type: integer
+          minimum: 1
+        final_score:
+          type: integer
+          minimum: 0
+        completed_at:
+          type: string
+          format: date-time
+      example:
+        rank: 1
+        final_score: 1200
+        completed_at: "2026-08-07T13:00:00Z"
+
+    LeaderboardResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - entries
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/LeaderboardEntry"
+      example:
+        entries:
+          - rank: 1
+            final_score: 1200
+            completed_at: "2026-08-07T13:00:00Z"
+          - rank: 2
+            final_score: 1100
+            completed_at: "2026-08-07T12:40:00Z"
+
     ErrorResponse:
       type: object
       additionalProperties: false
@@ -118,6 +789,5 @@ components:
         error:
           code: validation_error
           message: Request validation failed
-          request_id: "22222222-2222-4111-8111-222222222222"
+          request_id: "66666666-6666-4666-8666-666666666666"
           details: {}
-
