@@ -25,6 +25,14 @@ jobs:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
 
+      - name: Check formatting
+        run: | 
+            files="$(gofmt -l .)"
+            test -z "$files" || (echo "$files" && exit 1)
+          
+      - name: Run go vet
+        run: go vet ./...
+
       - name: Run tests
         run: go test ./...
 
